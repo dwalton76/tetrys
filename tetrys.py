@@ -74,6 +74,7 @@ Speeds = [
 
 
 class Tetris:
+
     def __init__(self, height, width):
         self.height, self.width = height, width
         self.field = [[0 for _ in range(width)] for _ in range(height)]
@@ -190,6 +191,7 @@ class Tetris:
 
     def start(self):
         self.new_p()
+
         def target():
             while self.continues:
                 time.sleep(FPS / Speeds[self.level])
@@ -241,6 +243,7 @@ def music():
     pct, fq, duration = [
         int(s) for s in os.popen("xset q | grep bell").read().split()
         if s.isdigit()]
+
     @atexit.register
     def register():
         os.popen("xset b {} {} {}".format(pct, fq, duration))
