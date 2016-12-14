@@ -36,6 +36,7 @@ import curses
 from itertools import cycle, product
 import os
 import random
+import signal
 import sys
 import threading
 import time
@@ -86,6 +87,14 @@ class Tetris:
         self.drop_bonus = 0
         self.lock = threading.RLock()
         self.continues = True
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+
+    def signal_handler(self, signal, frame):
+        """
+        Received SIGINT or SIGTERM
+        """
+        self.continues = False
 
     def curses_str(self):
         if sys.version_info >= (3,):
@@ -142,13 +151,17 @@ class Tetris:
         self.current = piece, i, j
         return True
 
+
     def tick(self):
+        """
+        Returns True if the piece hit the bottom and a new piece was generated
+        """
         with self.lock:
             piece, i, j = self.current
             if i > 0:
                 self.remove_p(piece, i, j)
                 if self.add_p(piece, i - 1, j):
-                    return
+                    return False
                 else:
                     self.add_p(piece, i, j)
             self.new_p()
@@ -211,8 +224,10 @@ def main(stdscr):
     game = Tetris(20, 10)
     game.start()
     stdscr.clear()
+
     while game.continues:
         c = stdscr.getch()
+
         if c == ord("q"):
             game.continues = False
         elif c == curses.KEY_LEFT:
@@ -223,6 +238,12 @@ def main(stdscr):
             game.rotate()
         elif c == curses.KEY_DOWN:
             game.down()
+        # Drop the piece all the way to the bottom
+        # elif c == curses.KEY_SPACEBAR:
+        elif c == ord("x"):
+            while not game.tick():
+                pass
+
         for i, line in enumerate(game.curses_str().splitlines()):
             for j, c in enumerate(line):
                 if c == "0":
@@ -232,10 +253,12 @@ def main(stdscr):
                                   curses.color_pair(int(c)))
                 else:
                     stdscr.addstr(i, j, c, curses.color_pair(8))
+
         stdscr.addstr(22, 0, "Lines: {}".format(game.lines), curses.color_pair(8))
         stdscr.addstr(23, 0, "Level: {}".format(game.level), curses.color_pair(8))
         stdscr.addstr(24, 0, "Score: {}".format(game.score), curses.color_pair(8))
         stdscr.refresh()
+
     return game
 
 
